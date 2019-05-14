@@ -61,7 +61,7 @@ class upgradeMakeFrame():
         data = "04A00502"
         # 产品类型 + 版本日期 + 软件版本 + 硬件版本 + 文件总长 + 总包数 + 包长度 + 文件CRC校验 + 升级模式字
         # value = "28210000#18121716#01010002#01000000#0001f9c1#03f4#80#75d3#0000"
-        value = "28210000#19042515#01000004#01010000#" + self.FILE_LEN + "#" +  self.FILE_PACK_NUM + "#" + "80" + "#" +  self.FILE_CRC + "#" + "0000"
+        value = "28210000#19042515#01000099#01010000#" + self.FILE_LEN + "#" +  self.FILE_PACK_NUM + "#" + "80" + "#" +  self.FILE_CRC + "#" + "0000"
         List = dict(zip([data], [value]))
         VList = []
         VList += ["UpDate"]

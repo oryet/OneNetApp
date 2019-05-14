@@ -58,8 +58,8 @@ class onenetupgrade():
 
     def upgradeProc(self):
         # 定义设备云端信息
-        device_contents = "4Hkjc25uOQ6qDd4AsfMyvMOJLSg="
-        device_id = 522658053
+        device_contents = "mBnDJfsR8paDmq3g7mh=iWi9lb4="  # NB电表
+        device_id = 525383929 # 三相移动测试 20190321 7#
 
         self.con = OneNetApi(device_contents)  # 文件目录
 
