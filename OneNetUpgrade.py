@@ -3,8 +3,8 @@
 import threading
 import queue
 import time
-from UpgradeMakeFrame import upgradeMakeFrame
-import UpgradeDealFrame as df
+from PublicLib.Upgrade.UpgradeMakeFrame import upgradeMakeFrame
+import PublicLib.Upgrade.UpgradeDealFrame as df
 import OneNetToDev as odev
 from OneNetApi import *
 

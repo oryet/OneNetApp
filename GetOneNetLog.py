@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: UTF-8
-
+import sys
+sys.path.append("..")
 from OneNetApi import *
 import json
-from ly_Json import subStrToJson
+from PublicLib.Protocol.ly_Json import subStrToJson
 import xlwt
 import datetime
 import time
