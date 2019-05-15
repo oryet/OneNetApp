@@ -30,6 +30,8 @@ class onenetupgrade():
     def upgradehandle(self, nSocket):
         print("[1、启动升级 2、检查漏包 3、检查版本 4、继续升级]")
         str = input("请输入需要执行的流程：")
+        if str == "":
+            return 0
         n = int(str, 10)
         senddata = ""
 

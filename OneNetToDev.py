@@ -62,7 +62,7 @@ def onenet_senddata(con, deviceinfo, val):
 # 查询最近10条数据
 def onenet_recvdata(con, deviceinfo):
     if deviceinfo["online"]:
-        res3 = con.datapoint_multi_get(device_id = deviceinfo["id"], limit = 10, datastream_ids = deviceinfo["datastreams"][0]["id"])
+        res3 = con.datapoint_multi_get(device_id = deviceinfo["id"], limit = 1, datastream_ids = deviceinfo["datastreams"][0]["id"])
         count, recvtime, jsonstr = onenet_contjson(res3.content)
         return count, jsonstr
 
