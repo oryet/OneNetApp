@@ -113,3 +113,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 demo01.py
+OneNetTool.log.10
+OneNetTool.log.1
+OneNetTestTool.exe
+devIDcfg.json.back

@@ -74,6 +74,8 @@ def onenet_recvdata(con, deviceinfo):
                                        datastream_ids='3308_0_5750')
         count, recvtime, jsonstr = onenet_contjson(res3.content)
         return count, jsonstr
+    else:
+        print('设备不在线')
 
 
 if __name__ == '__main__':
@@ -90,20 +92,21 @@ if __name__ == '__main__':
 
     #设备ID
     # device_id = 586340334 # IMEI: 868334034332431
-    device_id = 586366366 # IMEI: 868334031308111
+    # device_id = 586366366 # IMEI: 868334031308111
     # device_id = 586366691 # IMEI: 868334031308913
     # device_id = 586329362 # IMEI: 868334034317762
+    device_id = 587021083 # IMEI: 868334033809439   TLY2823_09NB版本测试20200306
 
     if len(deviceinfo) == 0:
         # 获取设备信息
         res3 = con.device_info(device_id=device_id)
         ret, deviceinfo = onenet_paresdata(res3.content)
-        print('当前测试设备信息', device_id, deviceinfo['auth_info'])
+        print('当前测试设备信息', device_id, deviceinfo['auth_info'], 'online:',deviceinfo["online"])
 
     # 发送数据
-    val = "{'Len':'312','Cmd':'Read','SN':'1','DataTime':'190706121314','CRC':'FFFF','DataValue':{'0001FF00':''}}"  # object
+    val = "{'Len':'312','Cmd':'Read','SN':'1','DataTime':'190706121314','CRC':'FFFF','DataValue':{'04A20202':''}}"  # object
 
-    if ret is not None:
+    if ret is not None and deviceinfo["online"]:
         # 接收数据
         for i in range(1):  # 循环抄读次数
             ret = onenet_senddata(con, deviceinfo, val)
