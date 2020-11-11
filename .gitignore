@@ -117,3 +117,11 @@ OneNetTool.log.10
 OneNetTool.log.1
 OneNetTestTool.exe
 devIDcfg.json.back
+devIDcfg007.json
+devIDcfg.json
+devIDcfg.json
+OneNetNBMtrTool20201026.exe
+OneNetTool.log.2
+OneNetTool.log.3
+*.json
+*.exe
