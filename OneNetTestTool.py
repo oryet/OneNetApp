@@ -242,7 +242,7 @@ if __name__ == '__main__':
                 print('输入的设备index错误')
 
 
-        if state == 'query' or 'read':
+        if state == 'query' or state == 'read':
             kw = input('请输入查询关键词：[分隔符 ,]\n')
             print('查询中...\n')
             kwl = []
