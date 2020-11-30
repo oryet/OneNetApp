@@ -91,9 +91,10 @@ def getdevinfo(res3, device_id):
         return False, None
 
 
-def getcurinfo(con, rlist, devlist, prelist=None, keyword=None):
+def getcurinfo(con, rlist, devlist, nl, prelist=None, keyword=None):
     # 获取设备信息
-    for i in range(len(devlist)):
+    # for i in range(len(devlist)):
+    for i in nl:
         ret, deviceinfo = getdevinfo(rlist[i], devlist[i])
 
         if ret is True: # and deviceinfo["online"]:
@@ -132,9 +133,10 @@ def getcurinfo(con, rlist, devlist, prelist=None, keyword=None):
             except:
                 pass
 
-def devListSend(con, rlist, devlist, sendstr=None):
+def devListSend(con, rlist, devlist, nl, sendstr=None):
     # 获取设备信息
-    for i in range(len(devlist)):
+    # for i in range(len(devlist)):
+    for i in nl:
         ret, deviceinfo = getdevinfo(rlist[i], devlist[i])
 
         if ret is True and deviceinfo["online"]:
@@ -151,10 +153,29 @@ def devListSend(con, rlist, devlist, sendstr=None):
             ctime = '201029' + hour[-2:] + min[-2:] + sec[-2:]
             val = val.replace('180901120000',ctime)
 
-            sret = onenet_senddata(con, deviceinfo, val)
-            print('Send:', sret, val)
+            for n in range(3):
+                sret = onenet_senddata(con, deviceinfo, val)
+                print(devlist[i], 'Send:', sret, val)
+                if sret:
+                    break
+                else:
+                    time.sleep(7)
             logger.info(val)
             time.sleep(0.1)
+
+def indexList2List(s, num):
+    nl = []
+    nsl = s.split(',')
+    for s in nsl:
+        try:
+            n = int(s, 10)
+            if n < num:
+                nl += [n]
+        except:
+            continue
+    return nl
+
+
 
 if __name__ == '__main__':
     pub.loggingConfig('logging.conf')
@@ -195,49 +216,40 @@ if __name__ == '__main__':
 
     while(1):
         state = ''
-        n = -1
+        nl = []
         s = input("查询设备数据输入:query\n    [ 所有设备-all  某个设备-index ]\n实时抄读设备:read\n    [ 所有设备-all  某个设备-index ]\n输入 exit 结束\n")
+
+        config = pub.loadDefaultSettings("devIDcfg.json")
+        devlist = config['deviceID']
+
         if 'exit' in s:
             break
         elif 'query' in s:
             state = 'query'
             if 'all' in s:
-                pass
+                nl = list(range(len(devlist)))
             else:
                 s = s.replace(' ', '')
                 s = s.replace('query-', '')
-                try:
-                    n = int(s, 10)
-                except:
-                    pass
+                nl = indexList2List(s, len(devlist))
         elif 'read' in s:
             state = 'read'
-            s = s.replace(' ', '')
-            s = s.replace('read-', '')
             if 'all' in s:
-                pass
+                nl = list(range(len(devlist)))
             else:
-                try:
-                    n = int(s, 10)
-                except:
-                    pass
+                s = s.replace(' ', '')
+                s = s.replace('read-', '')
+                nl = indexList2List(s, len(devlist))
 
-        print(state, n)
-        config = pub.loadDefaultSettings("devIDcfg.json")
-        devlist = config['deviceID']
+        print(state, nl)
 
         if state == 'read':
             sendstr = input('请输入需要发送的报文:\n')
             print('发送中...\n')
-            if 0 <= n < len(devlist):
-                cdevlist = [devlist[n]]
-                rlist = []
-                connectonenet(rlist, cdevlist)
-                devListSend(con, rlist, cdevlist, sendstr)
-            elif n == -1:
-                rlist = []
+            rlist = []
+            if len(nl) > 0:
                 connectonenet(rlist, devlist)
-                devListSend(con, rlist, devlist, sendstr)
+                devListSend(con, rlist, devlist, nl, sendstr)
             else:
                 print('输入的设备index错误')
 
@@ -248,16 +260,10 @@ if __name__ == '__main__':
             kwl = []
             if kw != '':
                 kwl = kw.split(',')
-            if 0 <= n < len(devlist):
-                time.sleep(3)
-                cdevlist = [devlist[n]]
-                rlist = []
-                connectonenet(rlist, cdevlist)
-                getcurinfo(con, rlist, cdevlist, keyword=kwl)
-            elif n == -1:
-                rlist = []
+            rlist = []
+            if len(nl) > 0:
                 connectonenet(rlist, devlist)
-                getcurinfo(con, rlist, devlist, keyword=kwl)
+                getcurinfo(con, rlist, devlist, nl, keyword=kwl)
             else:
                 print('输入的设备index错误')
 
