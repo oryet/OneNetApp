@@ -126,9 +126,12 @@ def onenet_recvdata(con, deviceinfo, parm):
         print('设备不在线')
 
 
-def connectonenet(rlist, devlist):
-    for i in range(len(devlist)):
-        rlist += [con.device_info(device_id=devlist[i])]
+def connectonenet(con, rlist, devlist, nl):
+    for j in range(len(nl)):
+        for i in range(len(devlist)):
+            if i == nl[j]:
+                rlist += [[i, con.device_info(device_id=devlist[i])]]
+                break
     return rlist
 
 
@@ -217,7 +220,8 @@ if __name__ == '__main__':
 
     # 连接设备
     rlist = []
-    connectonenet(rlist, devlist)
+    nl = list(range(len(devlist)))
+    connectonenet(con, rlist, devlist, nl)
 
     # 获取最近信息
     getcurinfo(con, rlist, devlist, predata, parm)
