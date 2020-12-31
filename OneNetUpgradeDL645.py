@@ -3,7 +3,7 @@
 import threading
 import queue
 import time
-from PublicLib.Upgrade.UpgradeMakeFrame import upgradeMakeFrame
+from PublicLib.Upgrade.UpgradeMakeFrame_DL645 import upgradeMakeFrame
 import PublicLib.Upgrade.UpgradeDealFrame as df
 import OneNetApp.OneNetToDev as odev
 from PublicLib.CloudAPI.OneNet.OneNetApi import *
@@ -39,8 +39,7 @@ class onenetupgrade():
             senddata = self.mf.upgradeStart()
             self.upgradeCnt = 0
         elif (n == 2):
-            strindex = input("请输入需要查询的包序号：")
-            senddata = self.mf.upgradeCheckPack(strindex)
+            senddata = self.mf.upgradeCheckPack()
         elif (n == 3):
             senddata = self.mf.upgradeCheckVision()
         else:
