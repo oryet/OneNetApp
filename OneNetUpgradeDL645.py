@@ -4,8 +4,9 @@ import threading
 import queue
 import time
 from PublicLib.Upgrade.UpgradeMakeFrame_DL645 import upgradeMakeFrame
-import PublicLib.Upgrade.UpgradeDealFrame as df
-import OneNetApp.OneNetToDev as odev
+import PublicLib.Upgrade.UpgradeDealFrame_DL645 as df
+# import OneNetApp.OneNetToDev as odev
+from PublicLib.CloudAPI.OneNet.OneNetFrame import *
 from PublicLib.CloudAPI.OneNet.OneNetApi import *
 
 
@@ -47,11 +48,11 @@ class onenetupgrade():
 
         if senddata:
             # socketServer.SocketSend(nSocket, senddata)
-            odev.onenet_senddata(self.con, self.deviceinfo, senddata)
+            onenet_sendcmd(self.con, self.deviceinfo, senddata)
             print(senddata)
 
         # 接收处理
-        count, recvdata = odev.onenet_recvdata(self.con, self.deviceinfo)
+        count, recvdata = onenet_recvdata(self.con, self.deviceinfo)
         if count > 0:
             for i in range(count):
                 self.qRecv.put(recvdata[i])
@@ -67,7 +68,7 @@ class onenetupgrade():
         if len(self.deviceinfo) == 0:
             # 获取设备信息
             res3 = self.con.device_info(device_id=device_id)
-            ret, self.deviceinfo = odev.onenet_paresdata(res3.content)
+            ret, self.deviceinfo = onenet_paresdata(res3.content)
 
         # 启动数据处理线程
         self.upgradeStartRecvThread()
@@ -81,7 +82,7 @@ class onenetupgrade():
 
                 # 接收处理
                 if self.state != 1:
-                    count, recvdata = odev.onenet_recvdata(self.con, self.deviceinfo)
+                    count, recvdata = onenet_recvdata(self.con, self.deviceinfo)
                     if count > 0:
                         for i in range(count):
                             self.qRecv.put(recvdata[i])
@@ -94,17 +95,17 @@ class onenetupgrade():
                 elif self.state == 2:  # 自动查漏包1
                     senddata = self.mf.upgradeCheckPack("1")
                     # socketServer.SocketSend(nSocket, senddata)
-                    odev.onenet_senddata(self.con, self.deviceinfo, senddata)
+                    onenet_sendcmd(self.con, self.deviceinfo, senddata)
                     self.state = 3
                 elif self.state == 3:  # 自动查漏包2
                     senddata = self.mf.upgradeCheckPack("2")
                     # socketServer.SocketSend(nSocket, senddata)
-                    odev.onenet_senddata(self.con, self.deviceinfo, senddata)
+                    onenet_sendcmd(self.con, self.deviceinfo, senddata)
                     self.state = 4
                 elif self.state == 4:  # 自动查版本号
                     senddata = self.mf.upgradeCheckVision()
                     # socketServer.SocketSend(nSocket, senddata)
-                    odev.onenet_senddata(self.con, self.deviceinfo, senddata)
+                    onenet_sendcmd(self.con, self.deviceinfo, senddata)
                     self.state = 1
                     self.upgradeCnt += 1
                     if self.upgradeCnt > 5:
@@ -116,9 +117,11 @@ class onenetupgrade():
                         self.uplist["bmap"][i] = 1
                         print("升级ing, 当前包序号：", i)
                         # socketServer.SocketSend(nSocket, senddata)
-                        odev.onenet_senddata(self.con, self.deviceinfo, senddata)
-                        print(senddata)
-                    if (i == 10) or (i > 10 and i >= n):
+                        ret = onenet_sendcmd(self.con, self.deviceinfo, senddata)
+                        print(ret, senddata)
+                    if ret == False:
+                        self.state = 0  # 手动
+                    elif (i == 10) or (i > 10 and i >= n):
                         self.state = 0 # 手动
                     elif (i >= self.mf.packnum):
                         self.state = 2 # 自动查漏包
@@ -126,7 +129,7 @@ class onenetupgrade():
 if __name__ == '__main__':
     filename = u'F:\\Work\\软件提交\\TLY2821\\TLY2821-03-UP0000-201211-00\\TLY2821-03-UP0000-201211-00.bin'
     device_contents = "mBnDJfsR8paDmq3g7mh=iWi9lb4="  # NB电表
-    device_id = 641859315 # 三相移动测试 20190321 7#
+    device_id = 657412177 # 三相移动测试 20190321 7#
     su = onenetupgrade(filename)
     su.upgradeProc(device_contents, device_id)
 
