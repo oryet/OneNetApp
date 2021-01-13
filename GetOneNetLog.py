@@ -2,7 +2,7 @@
 # -*- coding: UTF-8
 import sys
 sys.path.append("..")
-from OneNetApi import *
+from PublicLib.CloudAPI.OneNet.OneNetApi import *
 import json
 from PublicLib.Protocol.ly_Json import subStrToJson
 import xlwt
@@ -32,9 +32,9 @@ def contjson(content):
 
         recvtime = dic["at"]
         value = dic["value"]
-        value = subStrToJson(value)
+        ret, jsonvalue = subStrToJson(value)
         recvtimelist +=[recvtime]
-        valuelist += [value]
+        valuelist += [jsonvalue]
     return count,recvtimelist,valuelist
 
 def createxls():

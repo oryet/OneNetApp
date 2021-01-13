@@ -2,7 +2,7 @@
 # -*- coding: UTF-8
 import sys
 sys.path.append("..")
-from OneNetApp.OneNetApi import *
+from PublicLib.CloudAPI.OneNet.OneNetApi import *
 from PublicLib.CloudAPI.OneNet.OneNetFrame import *
 import logging
 from PublicLib import public as pub

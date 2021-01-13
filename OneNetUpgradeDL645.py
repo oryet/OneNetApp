@@ -15,7 +15,7 @@ class onenetupgrade():
         self.qRecv = queue.Queue()
         self.mf = upgradeMakeFrame(filename)
         self.state = 0
-        bitmap = [0] * 1024
+        bitmap = [0] * 2048
         self.uplist = {"ip": "", "port": "", "bmap": bitmap}
         # self.ADDRESS = ('192.168.127.16', 8888)  # 绑定地址
         self.upgradeCnt = 0
@@ -28,7 +28,7 @@ class onenetupgrade():
         tser.start()
 
 
-    def upgradehandle(self, nSocket):
+    def upgradehandle(self):
         print("[1、启动升级 2、检查漏包 3、检查版本 4、继续升级]")
         str = input("请输入需要执行的流程：")
         if str == "":
@@ -47,12 +47,11 @@ class onenetupgrade():
             pass
 
         if senddata:
-            # socketServer.SocketSend(nSocket, senddata)
             onenet_sendcmd(self.con, self.deviceinfo, senddata)
-            print(senddata)
 
         # 接收处理
-        count, recvdata = onenet_recvdata(self.con, self.deviceinfo)
+        parm = {"limit":1}
+        count, recvdata = onenet_recvdata(self.con, self.deviceinfo, parm)
         if count > 0:
             for i in range(count):
                 self.qRecv.put(recvdata[i])
@@ -82,7 +81,8 @@ class onenetupgrade():
 
                 # 接收处理
                 if self.state != 1:
-                    count, recvdata = onenet_recvdata(self.con, self.deviceinfo)
+                    parm = {"limit": 1}
+                    count, recvdata = onenet_recvdata(self.con, self.deviceinfo, parm)
                     if count > 0:
                         for i in range(count):
                             self.qRecv.put(recvdata[i])
@@ -111,20 +111,20 @@ class onenetupgrade():
                     if self.upgradeCnt > 5:
                         self.state = 0  # 大于自动尝试次数，进入手动模式
                 else:
-                    i = df.upgradeGetCurPackNum(self)
+                    i = df.upgradeGetCurPackNum(self.uplist)
                     if i < self.mf.packnum:
                         senddata = self.mf.upgradeSendFile(i)  # 读文件从0开始, 包序号从1开始
                         self.uplist["bmap"][i] = 1
                         print("升级ing, 当前包序号：", i)
                         # socketServer.SocketSend(nSocket, senddata)
                         ret = onenet_sendcmd(self.con, self.deviceinfo, senddata)
-                        print(ret, senddata)
-                    if ret == False:
-                        self.state = 0  # 手动
+                        if ret == False:
+                            self.state = 0  # 手动
                     elif (i == 10) or (i > 10 and i >= n):
                         self.state = 0 # 手动
                     elif (i >= self.mf.packnum):
                         self.state = 2 # 自动查漏包
+
 
 if __name__ == '__main__':
     filename = u'F:\\Work\\软件提交\\TLY2821\\TLY2821-03-UP0000-201211-00\\TLY2821-03-UP0000-201211-00.bin'
