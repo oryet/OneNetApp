@@ -1,7 +1,6 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import threading
-import queue
 import time
 from PublicLib.Upgrade.UpgradeMakeFrame_DL645 import upgradeMakeFrame
 import PublicLib.Upgrade.UpgradeDealFrame_DL645 as df
@@ -12,50 +11,123 @@ from PublicLib.CloudAPI.OneNet.OneNetApi import *
 
 class onenetupgrade():
     def __init__(self, filename):
-        self.qRecv = queue.Queue()
         self.mf = upgradeMakeFrame(filename)
-        self.state = 0
         bitmap = [0] * 2048
         self.uplist = {"ip": "", "port": "", "bmap": bitmap}
         # self.ADDRESS = ('192.168.127.16', 8888)  # 绑定地址
         self.upgradeCnt = 0
         # 定义设备信息
         self.deviceinfo = {}
+        self.state = {"send": "", "recv":1, "mode":"auto", "retry":1}
 
 
     def upgradeStartRecvThread(self):
-        tser = threading.Thread(target=df.upgradeRecvProc, args=(self, ))
+        tser = threading.Thread(target=self.upgradeRecv, args=())
+        tser.start()
+
+    def upgradeInputThread(self):
+        tser = threading.Thread(target=self.upgradeInput, args=())
+        tser.start()
+
+    def upgradeSendThread(self):
+        tser = threading.Thread(target=self.upgradehandle, args=())
         tser.start()
 
 
+    def upgradeRecv(self):
+        while(1):
+            # 接收处理
+            t = self.state["recv"]
+            if t > 0:
+                self.state["recv"] = 0
+                time.sleep(t)
+                parm = {"limit": 1}
+                data = {}
+                count, recvdata = onenet_recvdata(self.con, self.deviceinfo, parm, data)
+                print('upgradeRecv count:', count)
+                for d in recvdata:
+                    if 'Len' in d:
+                        pass
+                    elif 'HexStr' in d:
+                        df.upgradeDataProc_DL645(d['HexStr'], self.uplist)
+                    else:
+                        pass
+            else:
+                time.sleep(1)
+
+
+    def upgradeInput(self):
+        while(1):
+            print("[0、暂停 1、启动升级 2、检查漏包 3、检查版本 N、继续升级]")
+            n = input("请输入需要执行的流程：")
+            if len(n) > 0:
+                if n == '0':
+                    self.state["send"] = 'pause'
+                    self.state["mode"] = 'manual'
+                elif n == '1':
+                    self.state["send"] = 'upgrade_start'
+                    self.upgradeCnt = 0
+                    self.state["mode"] = 'auto'
+                elif n == '2':
+                    self.state["send"] = 'checkPage'
+                    self.state["retry"] = 1
+                    self.state["mode"] = 'manual'
+                elif n == '3':
+                    self.state["send"] = 'checkVersions'
+                    self.state["retry"] = 1
+                    self.state["mode"] = 'manual'
+                else:
+                    self.state["send"] = 'upgrade_ing'
+                    self.state["mode"] = 'auto'
+
     def upgradehandle(self):
-        print("[1、启动升级 2、检查漏包 3、检查版本 4、继续升级]")
-        str = input("请输入需要执行的流程：")
-        if str == "":
-            return 0
-        n = int(str, 10)
-        senddata = ""
+        state = {}
+        while(1):
+            senddata = ""
+            if state != self.state:
+                print('upgradehandle state:', self.state)
+                state = self.state
 
-        if (n == 1):
-            senddata = self.mf.upgradeStart()
-            self.upgradeCnt = 0
-        elif (n == 2):
-            senddata = self.mf.upgradeCheckPack()
-        elif (n == 3):
-            senddata = self.mf.upgradeCheckVision()
-        else:
-            pass
+            if self.state["send"] == 'upgrade_start':
+                senddata = self.mf.upgradeStart()
+                self.state["send"] = 'upgrade_ing'
+            elif self.state["send"] == 'checkPage':
+                if self.state["retry"] > 0:
+                    senddata = self.mf.upgradeCheckPack()
+                    self.state["recv"] = 1
+                    self.state["retry"] -= 1
+                    i = df.upgradeGetCurPackNum(self.uplist)
+                    if self.state["mode"] == 'auto' and i < self.mf.packnum:
+                        self.state["send"] = 'upgrade_ing'
+                elif self.state["mode"] == 'auto':
+                    self.state["send"] = 'checkVersions'
+                    self.state["retry"] = 3
+            elif self.state["send"] == 'checkVersions':
+                if self.state["retry"] > 0:
+                    self.state["recv"] = 1
+                    senddata = self.mf.upgradeCheckVision()
+                    self.state["retry"] -= 1
+                    i = df.upgradeGetCurPackNum(self.uplist)
+                    if self.state["mode"] == 'auto' and i < self.mf.packnum:
+                        self.state["send"] = 'upgrade_ing'
+                elif self.state["mode"] == 'auto':
+                    self.state["send"] = 'pause'
+                    self.state["retry"] = 0
+            elif self.state["send"] == 'upgrade_ing':
+                i = df.upgradeGetCurPackNum(self.uplist)
+                if i < self.mf.packnum:
+                    senddata = self.mf.upgradeSendFile(i)  # 读文件从0开始, 包序号从1开始
+                    self.uplist["bmap"][i] = 1
+                    # print("当前包序号：", i, " [", i*100/self.mf.packnum, '%]')
+                    print("当前包序号：{}, 进度: {:.2%}".format(i, i/self.mf.packnum))
+                else:
+                    self.state["send"] = 'checkPage'
+                    self.state["retry"] = 3
+            else:
+                time.sleep(1)
 
-        if senddata:
-            onenet_sendcmd(self.con, self.deviceinfo, senddata)
-
-        # 接收处理
-        parm = {"limit":1}
-        count, recvdata = onenet_recvdata(self.con, self.deviceinfo, parm)
-        if count > 0:
-            for i in range(count):
-                self.qRecv.put(recvdata[i])
-        return n
+            if senddata:
+                onenet_sendcmd(self.con, self.deviceinfo, senddata)
 
     def upgradeProc(self, device_contents, device_id):
         # 定义设备云端信息
@@ -71,59 +143,8 @@ class onenetupgrade():
 
         # 启动数据处理线程
         self.upgradeStartRecvThread()
-
-        # 升级应用线程
-        while 1:
-            time.sleep(5)
-
-            if self.deviceinfo["online"]:
-                nSocket = self.con  # self.uim.socketComboBox.currentIndex()
-
-                # 接收处理
-                if self.state != 1:
-                    parm = {"limit": 1}
-                    count, recvdata = onenet_recvdata(self.con, self.deviceinfo, parm)
-                    if count > 0:
-                        for i in range(count):
-                            self.qRecv.put(recvdata[i])
-
-                # 根据状态进行 1、启动升级 2、检查漏包 3、升级文件 4、检查版本
-                if self.state == 0:
-                    n = self.upgradehandle(nSocket)
-                    if n == 1 or n > 10:
-                        self.state = 1
-                elif self.state == 2:  # 自动查漏包1
-                    senddata = self.mf.upgradeCheckPack("1")
-                    # socketServer.SocketSend(nSocket, senddata)
-                    onenet_sendcmd(self.con, self.deviceinfo, senddata)
-                    self.state = 3
-                elif self.state == 3:  # 自动查漏包2
-                    senddata = self.mf.upgradeCheckPack("2")
-                    # socketServer.SocketSend(nSocket, senddata)
-                    onenet_sendcmd(self.con, self.deviceinfo, senddata)
-                    self.state = 4
-                elif self.state == 4:  # 自动查版本号
-                    senddata = self.mf.upgradeCheckVision()
-                    # socketServer.SocketSend(nSocket, senddata)
-                    onenet_sendcmd(self.con, self.deviceinfo, senddata)
-                    self.state = 1
-                    self.upgradeCnt += 1
-                    if self.upgradeCnt > 5:
-                        self.state = 0  # 大于自动尝试次数，进入手动模式
-                else:
-                    i = df.upgradeGetCurPackNum(self.uplist)
-                    if i < self.mf.packnum:
-                        senddata = self.mf.upgradeSendFile(i)  # 读文件从0开始, 包序号从1开始
-                        self.uplist["bmap"][i] = 1
-                        print("升级ing, 当前包序号：", i)
-                        # socketServer.SocketSend(nSocket, senddata)
-                        ret = onenet_sendcmd(self.con, self.deviceinfo, senddata)
-                        if ret == False:
-                            self.state = 0  # 手动
-                    elif (i == 10) or (i > 10 and i >= n):
-                        self.state = 0 # 手动
-                    elif (i >= self.mf.packnum):
-                        self.state = 2 # 自动查漏包
+        self.upgradeInputThread()
+        self.upgradeSendThread()
 
 
 if __name__ == '__main__':
