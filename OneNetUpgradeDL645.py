@@ -4,7 +4,7 @@ import threading
 import time
 from PublicLib.Upgrade.UpgradeMakeFrame_DL645 import upgradeMakeFrame
 import PublicLib.Upgrade.UpgradeDealFrame_DL645 as df
-# import OneNetApp.OneNetToDev as odev
+from PublicLib.public import *
 from PublicLib.CloudAPI.OneNet.OneNetFrame import *
 from PublicLib.CloudAPI.OneNet.OneNetApi import *
 
@@ -148,9 +148,10 @@ class onenetupgrade():
 
 
 if __name__ == '__main__':
-    filename = u'F:\\Work\\软件提交\\TLY2821\\TLY2821-03-UP0000-201211-00\\TLY2821-03-UP0000-201211-00.bin'
-    device_contents = "mBnDJfsR8paDmq3g7mh=iWi9lb4="  # NB电表
-    device_id = 657412177 # 三相移动测试 20190321 7#
-    su = onenetupgrade(filename)
-    su.upgradeProc(device_contents, device_id)
+    # filename = u'F:\\Work\\软件提交\\TLY2821\\TLY2821-03-UP0000-201211-00\\TLY2821-03-UP0000-201211-00.bin'
+    # device_contents = "mBnDJfsR8paDmq3g7mh=iWi9lb4="  # NB电表
+    # device_id = 657412177 # 三相移动测试 20190321 7#
+    cfg = loadDefaultSettings("upgradeCfg.json")
+    su = onenetupgrade(cfg['filename'])
+    su.upgradeProc(cfg['device_contents'], cfg['device_id'])
 
